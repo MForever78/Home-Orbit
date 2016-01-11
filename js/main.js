@@ -12,6 +12,7 @@ var rTri = 0;
 var rCube = 0;
 var shaderProgram;
 var dogeTexture;
+var currentlyPressedKeys = {};
 
 // utils
 function mvPushMatrix() {
@@ -30,6 +31,17 @@ function degToRad(degrees) {
   return degrees * Math.PI / 180;
 }
 
+function handleKeyDown(event) {
+  // maintain key status
+  currentlyPressedKeys[event.keyCode] = true;
+
+  // handle keys once
+}
+
+function handleKeyUp(event) {
+  currentlyPressedKeys[event.keyCode] = false;
+}
+
 function webGLStart() {
   var canvas = document.getElementById("main-frame");
   initGL(canvas);
@@ -39,14 +51,22 @@ function webGLStart() {
 
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
   gl.enable(gl.DEPTH_TEST);
+
+  document.onkeydown = handleKeyDown;
+  document.onkeyup = handleKeyUp;
   
   tick();
 }
 
 function tick() {
   window.requestAnimationFrame(tick);
+  handleKeys();
   drawScene();
   animate();
+}
+
+function handleKeys() {
+  // handle keys per tick
 }
 
 var lastTime = 0;
