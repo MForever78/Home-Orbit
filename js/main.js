@@ -11,7 +11,7 @@ function webGLStart() {
   initBuffers();
 
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
-  gl.enable(gl.DEPTH_FIRST);
+  gl.enable(gl.DEPTH_TEST);
   
   drawScene();
 }
@@ -59,15 +59,12 @@ function getShader(gl, id) {
   
   var str = "";
   var k = shaderScript.firstChild;
-  console.log(k);
   while (k) {
     if (k.nodeType === 3)
       str += k.textContent;
     k = k.nextSibling;
   }
   
-  console.log(str);
-
   var shader;
   if (shaderScript.type === "x-shader/x-fragment") {
     shader = gl.createShader(gl.FRAGMENT_SHADER);
@@ -109,8 +106,11 @@ function setMatrixUniforms() {
 function drawScene() {
   gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
+  mat4.perspective(pMatrix, 45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0);
   mat4.identity(mvMatrix);
+
+  mat4.translate(mvMatrix, mvMatrix, [0.0, 0.0, -7.0]);
+
   gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
   gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, triangleVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
   setMatrixUniforms();
