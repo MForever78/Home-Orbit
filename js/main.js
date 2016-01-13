@@ -2,10 +2,10 @@ var gl;
 var mvMatrix = mat4.create();
 var mvMatrixStack = [];
 var pMatrix = mat4.create();
-var rTri = 0;
 var rCube = 0;
 var shaderProgram;
 var dogeTexture;
+var texture;
 var currentlyPressedKeys = {};
 var eye = [0, 0, 0];
 var center = [0, 0, 0];
@@ -41,54 +41,102 @@ function handleKeyUp(event) {
 
 // Objects
 
-function Cube() {
+function Cube(size) {
   this.vertexPositionBuffer = gl.createBuffer();
   this.vertexColorBuffer = gl.createBuffer();
   this.vertexIndexBuffer = gl.createBuffer();
   this.vertexTextureCoordBuffer = gl.createBuffer();
   this.vertexNormalBuffer = gl.createBuffer();
 
+  var halfSize = size.map(function(element) {
+    return element / 2.0;
+  });
+
   gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexPositionBuffer);
   var vertices = [
     // Front
-    -1.0, -1.0, 1.0,
-    1.0, -1.0, 1.0,
-    1.0, 1.0, 1.0,
-    -1.0, 1.0, 1.0,
+    -halfSize[0], -halfSize[1], halfSize[2],
+    halfSize[0], -halfSize[1], halfSize[2],
+    halfSize[0], halfSize[1], halfSize[2],
+    -halfSize[0], halfSize[1], halfSize[2],
 
     // Back
-    -1.0, -1.0, -1.0,
-    -1.0, 1.0, -1.0,
-    1.0, 1.0, -1.0,
-    1.0, -1.0, -1.0,
+    -halfSize[0], -halfSize[1], -halfSize[2],
+    -halfSize[0], halfSize[1], -halfSize[2],
+    halfSize[0], halfSize[1], -halfSize[2],
+    halfSize[0], -halfSize[1], -halfSize[2],
     
     // Top
-    -1.0, 1.0, -1.0,
-    -1.0, 1.0, 1.0,
-    1.0, 1.0, 1.0,
-    1.0, 1.0, -1.0,
+    -halfSize[0], halfSize[1], -halfSize[2],
+    -halfSize[0], halfSize[1], halfSize[2],
+    halfSize[0], halfSize[1], halfSize[2],
+    halfSize[0], halfSize[1], -halfSize[2],
 
     // Bottom
-    -1.0, -1.0, -1.0,
-    1.0, -1.0, -1.0,
-    1.0, -1.0, 1.0,
-    -1.0, -1.0, 1.0,
+    -halfSize[0], -halfSize[1], -halfSize[2],
+    halfSize[0], -halfSize[1], -halfSize[2],
+    halfSize[0], -halfSize[1], halfSize[2],
+    -halfSize[0], -halfSize[1], halfSize[2],
 
     // Right
-    1.0, -1.0, -1.0,
-    1.0, 1.0, -1.0,
-    1.0, 1.0, 1.0,
-    1.0, -1.0, 1.0,
+    halfSize[0], -halfSize[1], -halfSize[2],
+    halfSize[0], halfSize[1], -halfSize[2],
+    halfSize[0], halfSize[1], halfSize[2],
+    halfSize[0], -halfSize[1], halfSize[2],
 
     // Left
-    -1.0, -1.0, -1.0,
-    -1.0, -1.0, 1.0,
-    -1.0, 1.0, 1.0,
-    -1.0, 1.0, -1.0,
+    -halfSize[0], -halfSize[1], -halfSize[2],
+    -halfSize[0], -halfSize[1], halfSize[2],
+    -halfSize[0], halfSize[1], halfSize[2],
+    -halfSize[0], halfSize[1], -halfSize[2]
   ];
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
   this.vertexPositionBuffer.itemSize = 3;
   this.vertexPositionBuffer.numItems = 24;
+
+  // texture
+  this.vertexTextureCoordBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexTextureCoordBuffer);
+  var textureCoords = [
+    // Front
+    0.0, 0.0,
+    size[0], 0.0,
+    size[0], size[1],
+    0.0, size[1],
+
+    // Back
+    size[0], 0.0,
+    size[0], size[1],
+    0.0, size[1],
+    0.0, 0.0,
+
+    // Top
+    0.0, size[2],
+    0.0, 0.0,
+    size[0], 0.0,
+    size[0], size[2],
+
+    // Bottom
+    size[0], size[2],
+    0.0, size[2],
+    0.0, 0.0,
+    size[0], 0.0,
+
+    // Right
+    size[2], 0.0,
+    size[2], size[1],
+    0.0, size[1],
+    0.0, 0.0,
+
+    // Left
+    0.0, 0.0,
+    size[2], 0.0,
+    size[2], size[1],
+    0.0, size[1],
+  ];
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
+  this.vertexTextureCoordBuffer.itemSize = 2;
+  this.vertexTextureCoordBuffer.numItems = 24;
 
   // index
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.vertexIndexBuffer);
@@ -104,51 +152,8 @@ function Cube() {
   this.vertexIndexBuffer.itemSize = 1;
   this.vertexIndexBuffer.numItems = 36;
 
-  // texture
-  this.vertexTextureCoordBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexTextureCoordBuffer);
-  var textureCoords = [
-    // Front
-    0.0, 0.0,
-    1.0, 0.0,
-    1.0, 1.0,
-    0.0, 1.0,
-
-    // Back
-    1.0, 0.0,
-    1.0, 1.0,
-    0.0, 1.0,
-    0.0, 0.0,
-
-    // Top
-    0.0, 1.0,
-    0.0, 0.0,
-    1.0, 0.0,
-    1.0, 1.0,
-
-    // Bottom
-    1.0, 1.0,
-    0.0, 1.0,
-    0.0, 0.0,
-    1.0, 0.0,
-
-    // Right
-    1.0, 0.0,
-    1.0, 1.0,
-    0.0, 1.0,
-    0.0, 0.0,
-
-    // Left
-    0.0, 0.0,
-    1.0, 0.0,
-    1.0, 1.0,
-    0.0, 1.0,
-  ];
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
-  this.vertexTextureCoordBuffer.itemSize = 2;
-  this.vertexTextureCoordBuffer.numItems = 24;
-
   // normal
+  // used to reflect light
   this.vertexNormalBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexNormalBuffer);
   var vertexNormals = [
@@ -236,7 +241,6 @@ function animate() {
   var timeNow = new Date().getTime();
   if (lastTime != 0) {
     var elapsed = new Date().getTime();
-    rTri += 1;
     rCube += 1;
   }
   lastTime = timeNow;
@@ -256,6 +260,9 @@ function handleLoadedTexture(texture) {
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
+  gl.generateMipmap(gl.TEXTURE_2D);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
   gl.bindTexture(gl.TEXTURE_2D, null);
@@ -357,13 +364,58 @@ function setMatrixUniforms() {
 function drawScene() {
   gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  // always use lighting, for now
+  // maybe use a key to toggle in the future
+  var lighting = true;
+  gl.uniform1i(shaderProgram.useLightingUniform, lighting);
+  if (lighting) {
+    // use white light as default
+    gl.uniform3f(shaderProgram.ambientColorUniform, 0.2, 0.2, 0.2);
+    
+    var lightingDirection = [-0.5, -1.0, 0.0];
+    var adjustedLD = vec3.create();
+    // scale its length to one
+    vec3.normalize(adjustedLD, lightingDirection);
+    vec3.scale(adjustedLD, adjustedLD, -1);
+    gl.uniform3fv(shaderProgram.lightingDirectionUniform, adjustedLD);
+    gl.uniform3f(shaderProgram.directionalColorUniform, 1.0, 1.0, 1.0);
+  }
+
+  // set the look view
   mat4.perspective(pMatrix, 45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0);
   mat4.lookAt(mvMatrix, eye, center, up);
+
+  /*
+   * Floor
+   */
+  
+  var floor = new Cube([20.0, 0.2, 20.0]);
+  mvPushMatrix();
+  mat4.translate(mvMatrix, mvMatrix, [0, -1.0, 0]);
+  gl.bindBuffer(gl.ARRAY_BUFFER, floor.vertexPositionBuffer);
+  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, floor.vertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+  // normal
+  gl.bindBuffer(gl.ARRAY_BUFFER, floor.vertexNormalBuffer);
+  gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, floor.vertexNormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+  // texture
+  gl.bindBuffer(gl.ARRAY_BUFFER, floor.vertexTextureCoordBuffer);
+  gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, floor.vertexTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, dogeTexture);
+  gl.uniform1i(shaderProgram.samplerUniform, 0);
+
+  setMatrixUniforms();
+  gl.drawElements(gl.TRIANGLES, floor.vertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+  mvPopMatrix();
 
   /*
    * Cube
    */
 
+  /*
   var cube = new Cube();
 
   mvPushMatrix();
@@ -384,29 +436,13 @@ function drawScene() {
   gl.bindTexture(gl.TEXTURE_2D, dogeTexture);
   gl.uniform1i(shaderProgram.samplerUniform, 0);
 
-  // always use lighting, for now
-  // maybe use a key to toggle in the future
-  var lighting = true;
-  gl.uniform1i(shaderProgram.useLightingUniform, lighting);
-  if (lighting) {
-    // use white light as default
-    gl.uniform3f(shaderProgram.ambientColorUniform, 0.2, 0.2, 0.2);
-    
-    var lightingDirection = [0.0, 0.0, -0.8];
-    var adjustedLD = vec3.create();
-    // scale its length to one
-    vec3.normalize(adjustedLD, lightingDirection);
-    vec3.scale(adjustedLD, adjustedLD, -1);
-    gl.uniform3fv(shaderProgram.lightingDirectionUniform, adjustedLD);
-    gl.uniform3f(shaderProgram.directionalColorUniform, 1.0, 1.0, 1.0);
-  }
-
   // index
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cube.vertexIndexBuffer);
   setMatrixUniforms();
   gl.drawElements(gl.TRIANGLES, cube.vertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 
   mvPopMatrix();
+  */
 }
 
 window.onload = webGLStart;
