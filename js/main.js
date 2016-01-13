@@ -14,6 +14,9 @@ var rCube = 0;
 var shaderProgram;
 var dogeTexture;
 var currentlyPressedKeys = {};
+var eye = [0, 0, 0];
+var center = [0, 0, 0];
+var up = [0, 1, 0];
 
 // utils
 function mvPushMatrix() {
@@ -45,6 +48,8 @@ function handleKeyUp(event) {
 
 function webGLStart() {
   var canvas = document.getElementById("main-frame");
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
   initGL(canvas);
   initShaders();
   initBuffers();
@@ -68,6 +73,15 @@ function tick() {
 
 function handleKeys() {
   // handle keys per tick
+  var direction = 0;
+  if (currentlyPressedKeys[87]) {
+    // w
+    eye[2] -= 0.1;
+  }
+  if (currentlyPressedKeys[83]) {
+    // s
+    eye[2] += 0.1;
+  }
 }
 
 var lastTime = 0;
@@ -138,9 +152,6 @@ function initShaders() {
   shaderProgram.textureCoordAttribute = gl.getAttribLocation(shaderProgram, "aTextureCoord");
   gl.enableVertexAttribArray(shaderProgram.textureCoordAttribute);
 
-  //shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "aVertexColor");
-  //gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
-
   shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
   shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
   shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, "uNMatrix");
@@ -185,36 +196,6 @@ function getShader(gl, id) {
 }
 
 function initBuffers() {
-  /*
-   * Triangle
-   */
-
-  /*
-  // position
-  triangleVertexPositionBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
-  var vertices = [
-     0.0,  1.0,  0.0,
-    -1.0, -1.0,  0.0,
-     1.0, -1.0,  0.0
-  ];
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-  triangleVertexPositionBuffer.itemSize = 3;
-  triangleVertexPositionBuffer.numItems = 3;
-  
-  // color
-  triangleVertexColorBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexColorBuffer);
-  var colors = [
-    1.0, 0.0, 0.0, 1.0,
-    0.0, 1.0, 0.0, 1.0,
-    0.0, 0.0, 1.0, 1.0,
-  ];
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-  triangleVertexColorBuffer.itemSize = 4;
-  triangleVertexColorBuffer.numItems = 3;
-  */
-
   /*
    * Cube
    */
@@ -262,26 +243,6 @@ function initBuffers() {
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
   cubeVertexPositionBuffer.itemSize = 3;
   cubeVertexPositionBuffer.numItems = 24;
-
-  // color
-  /*
-  cubeVertexColorBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexColorBuffer);
-  colors = [
-    [1.0, 0.0, 0.0, 1.0],
-    [1.0, 1.0, 0.0, 1.0],
-    [1.0, 0.0, 1.0, 1.0],
-    [1.0, 0.5, 0.0, 1.0],
-    [1.0, 0.0, 0.5, 1.0],
-    [0.5, 0.0, 0.0, 1.0],
-  ];
-  var unpackedColors = colors.reduce(function(prev, color) {
-    return prev.concat(color);
-  });
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(unpackedColors), gl.STATIC_DRAW);
-  cubeVertexColorBuffer.itemSize = 4;
-  cubeVertexColorBuffer.numItems = 24;
-  */
 
   // index
   cubeVertexIndexBuffer = gl.createBuffer();
@@ -400,30 +361,7 @@ function drawScene() {
   gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   mat4.perspective(pMatrix, 45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0);
-  mat4.identity(mvMatrix);
-
-  /*
-   * Tranigle
-   */
-  /*
-  mat4.translate(mvMatrix, mvMatrix, [-1.5, 0.0, -7.0]);
-
-  mvPushMatrix();
-  mat4.rotateY(mvMatrix, mvMatrix, degToRad(rTri));
-
-  // draw triangle
-  gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
-  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, triangleVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-  // draw color
-  gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexColorBuffer);
-  gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, triangleVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-  setMatrixUniforms();
-  gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPositionBuffer.numItems);
-
-  mvPopMatrix();
-  */
+  mat4.lookAt(mvMatrix, eye, center, up);
 
   /*
    * Cube
@@ -434,10 +372,6 @@ function drawScene() {
   mat4.rotate(mvMatrix, mvMatrix, degToRad(rCube), vec3.fromValues(1, 1, 1));
   gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPositionBuffer);
   gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, cubeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-  /*
-  gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexColorBuffer);
-  gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, cubeVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
-  */
 
   // normal
   gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexNormalBuffer);
