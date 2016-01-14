@@ -5,7 +5,8 @@ var pMatrix = mat4.create();
 var rCube = 0;
 var shaderProgram;
 var dogeTexture;
-var texture;
+var textures = [];
+var textureSource = ["img/doge.png", "img/floor.png"];
 var currentlyPressedKeys = {};
 var eye = [0, 0, 0];
 var center = [0, 0, 0];
@@ -205,7 +206,7 @@ function webGLStart() {
   initGL(canvas);
   initShaders();
   initBuffers();
-  initTexture();
+  initTextures();
 
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
   gl.enable(gl.DEPTH_TEST);
@@ -246,14 +247,16 @@ function animate() {
   lastTime = timeNow;
 }
 
-function initTexture() {
-  dogeTexture = gl.createTexture();
-  dogeTexture.image = new Image();
-  dogeTexture.image.onload = function() {
-    handleLoadedTexture(dogeTexture);
-  }
-
-  dogeTexture.image.src = "img/doge.png";
+function initTextures() {
+  textureSource.forEach(function(src) {
+    var tex = gl.createTexture();
+    textures.push(tex);
+    tex.image = new Image();
+    tex.image.onload = function() {
+      handleLoadedTexture(tex);
+    }
+    tex.image.src = src;
+  });
 }
 
 function handleLoadedTexture(texture) {
@@ -372,7 +375,7 @@ function drawScene() {
     // use white light as default
     gl.uniform3f(shaderProgram.ambientColorUniform, 0.2, 0.2, 0.2);
     
-    var lightingDirection = [-0.5, -1.0, 0.0];
+    var lightingDirection = [0.0, -1.0, 0.0];
     var adjustedLD = vec3.create();
     // scale its length to one
     vec3.normalize(adjustedLD, lightingDirection);
@@ -404,7 +407,7 @@ function drawScene() {
   gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, floor.vertexTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
   gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, dogeTexture);
+  gl.bindTexture(gl.TEXTURE_2D, textures[1]);
   gl.uniform1i(shaderProgram.samplerUniform, 0);
 
   setMatrixUniforms();
@@ -415,8 +418,7 @@ function drawScene() {
    * Cube
    */
 
-  /*
-  var cube = new Cube();
+  var cube = new Cube([1.0, 1.0, 1.0]);
 
   mvPushMatrix();
   mat4.translate(mvMatrix, mvMatrix, [0.0, 1.0, -5.0]);
@@ -433,7 +435,7 @@ function drawScene() {
   gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, cube.vertexTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
   gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, dogeTexture);
+  gl.bindTexture(gl.TEXTURE_2D, textures[0]);
   gl.uniform1i(shaderProgram.samplerUniform, 0);
 
   // index
@@ -442,7 +444,6 @@ function drawScene() {
   gl.drawElements(gl.TRIANGLES, cube.vertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 
   mvPopMatrix();
-  */
 }
 
 window.onload = webGLStart;
