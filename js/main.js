@@ -446,5 +446,11 @@ function drawScene() {
   mvPopMatrix();
 }
 
+window.onresize = function() {
+  var canvas = document.getElementById("main-frame");
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
 window.onload = webGLStart;
+
 
