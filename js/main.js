@@ -16,6 +16,10 @@ var meshList = {
   house: 'models/house_tri.obj'
 }
 var zoom = 1.0;
+var position = [0, 0, 0];
+
+var bOrbit = false;
+var fRotate = 0;
 
 // utils
 function mvPushMatrix() {
@@ -235,41 +239,34 @@ function handleKeys() {
   var direction = 0;
   if (currentlyPressedKeys[87]) {
     // w
-    var eyeDirection = vec3.create();
-    vec3.sub(eyeDirection, center, eye);
-    var eyeDirectionNormal = vec3.create();
-    vec3.normalize(eyeDirectionNormal, eyeDirection);
-    vec3.scale(eyeDirectionNormal, eyeDirectionNormal, 0.1);
-    vec3.add(eye, eye, eyeDirectionNormal);
-    vec3.add(center, center, eyeDirectionNormal);
+    position[2] += 0.1;
   }
   if (currentlyPressedKeys[83]) {
     // s
-    var eyeDirection = vec3.create();
-    vec3.sub(eyeDirection, center, eye);
-    var eyeDirectionNormal = vec3.create();
-    vec3.normalize(eyeDirectionNormal, eyeDirection);
-    vec3.scale(eyeDirectionNormal, eyeDirectionNormal, 0.1);
-    vec3.sub(eye, eye, eyeDirectionNormal);
-    vec3.sub(center, center, eyeDirectionNormal);
+    position[2] -= 0.1;
+  }
+  if (currentlyPressedKeys[65]) {
+    // a
+    position[0] += 0.1;
+  }
+  if (currentlyPressedKeys[68]) {
+    // d
+    position[0] -= 0.1;
   }
   if (currentlyPressedKeys[81]) {
     // q: zoom out
-    zoom += 0.1;
-    var eyeDirection = vec3.create();
-    vec3.sub(eyeDirection, center, eye);
-    vec3.scale(eyeDirection, eyeDirection, zoom / vec3.length(eyeDirection));
-    vec3.sub(eye, center, eyeDirection);
+    if ((zoom + 0.1) * 45 < 180)
+      zoom += 0.1;
   }
   if (currentlyPressedKeys[69]) {
     // e: zoom in
     if (zoom > 0.1) {
       zoom -= 0.1;
-      var eyeDirection = vec3.create();
-      vec3.sub(eyeDirection, center, eye);
-      vec3.scale(eyeDirection, eyeDirection, zoom / vec3.length(eyeDirection));
-      vec3.sub(eye, center, eyeDirection);
     }
+  }
+  if (currentlyPressedKeys[32]) {
+    // space: orbit
+    bOrbit = !bOrbit;
   }
 }
 
@@ -412,13 +409,13 @@ function drawScene() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   // always use lighting, for now
   // maybe use a key to toggle in the future
-  var lighting = false;
+  var lighting = true;
   gl.uniform1i(shaderProgram.useLightingUniform, lighting);
   if (lighting) {
     // use white light as default
     gl.uniform3f(shaderProgram.ambientColorUniform, 0.2, 0.2, 0.2);
     
-    var lightingDirection = [0.0, -1.0, 0.0];
+    var lightingDirection = [0.0, -1.0, -1.0];
     var adjustedLD = vec3.create();
     // scale its length to one
     vec3.normalize(adjustedLD, lightingDirection);
@@ -428,8 +425,15 @@ function drawScene() {
   }
 
   // set the look view
-  mat4.perspective(pMatrix, 45, gl.viewportWidth / gl.viewportHeight, 0.1, 1000.0);
+  mat4.perspective(pMatrix, degToRad(45 * zoom), gl.viewportWidth / gl.viewportHeight, 0.1, 1000.0);
   mat4.lookAt(mvMatrix, eye, center, up);
+
+  mvPushMatrix();
+  mat4.translate(mvMatrix, mvMatrix, position);
+  if (bOrbit) {
+    fRotate += 0.1;
+  }
+  mat4.rotateY(mvMatrix, mvMatrix, degToRad(fRotate));
 
   /*
    * Floor
@@ -496,7 +500,8 @@ function drawScene() {
     var house = meshes.house;
     
     mvPushMatrix();
-    mat4.translate(mvMatrix, mvMatrix, [0.0, -0.8, -5.0]); 
+    mat4.translate(mvMatrix, mvMatrix, [0.0, -0.8, 1.0]); 
+    mat4.rotateY(mvMatrix, mvMatrix, degToRad(180));
 
     // position
     gl.bindBuffer(gl.ARRAY_BUFFER, house.vertexBuffer);
@@ -521,6 +526,8 @@ function drawScene() {
     
     mvPopMatrix();
   }
+
+  mvPopMatrix();
 }
 
 window.onresize = function() {
