@@ -8,13 +8,14 @@ var dogeTexture;
 var textures = [];
 var textureSource = ["img/doge.png", "img/floor.png", "img/Farmhouse Texture.jpg"];
 var currentlyPressedKeys = {};
-var eye = [0, 0, 0];
+var eye = [0, 0, 1];
 var center = [0, 0, 0];
 var up = [0, 1, 0];
 var meshes;
 var meshList = {
   house: 'models/house_tri.obj'
 }
+var zoom = 1.0;
 
 // utils
 function mvPushMatrix() {
@@ -234,11 +235,41 @@ function handleKeys() {
   var direction = 0;
   if (currentlyPressedKeys[87]) {
     // w
-    eye[2] -= 0.1;
+    var eyeDirection = vec3.create();
+    vec3.sub(eyeDirection, center, eye);
+    var eyeDirectionNormal = vec3.create();
+    vec3.normalize(eyeDirectionNormal, eyeDirection);
+    vec3.scale(eyeDirectionNormal, eyeDirectionNormal, 0.1);
+    vec3.add(eye, eye, eyeDirectionNormal);
+    vec3.add(center, center, eyeDirectionNormal);
   }
   if (currentlyPressedKeys[83]) {
     // s
-    eye[2] += 0.1;
+    var eyeDirection = vec3.create();
+    vec3.sub(eyeDirection, center, eye);
+    var eyeDirectionNormal = vec3.create();
+    vec3.normalize(eyeDirectionNormal, eyeDirection);
+    vec3.scale(eyeDirectionNormal, eyeDirectionNormal, 0.1);
+    vec3.sub(eye, eye, eyeDirectionNormal);
+    vec3.sub(center, center, eyeDirectionNormal);
+  }
+  if (currentlyPressedKeys[81]) {
+    // q: zoom out
+    zoom += 0.1;
+    var eyeDirection = vec3.create();
+    vec3.sub(eyeDirection, center, eye);
+    vec3.scale(eyeDirection, eyeDirection, zoom / vec3.length(eyeDirection));
+    vec3.sub(eye, center, eyeDirection);
+  }
+  if (currentlyPressedKeys[69]) {
+    // e: zoom in
+    if (zoom > 0.1) {
+      zoom -= 0.1;
+      var eyeDirection = vec3.create();
+      vec3.sub(eyeDirection, center, eye);
+      vec3.scale(eyeDirection, eyeDirection, zoom / vec3.length(eyeDirection));
+      vec3.sub(eye, center, eyeDirection);
+    }
   }
 }
 
