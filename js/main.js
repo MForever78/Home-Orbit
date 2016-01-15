@@ -6,14 +6,22 @@ var rCube = 0;
 var shaderProgram;
 var dogeTexture;
 var textures = [];
-var textureSource = ["img/doge.png", "img/floor.png", "img/Farmhouse Texture.jpg"];
+var textureSource = [
+  "img/doge.png",
+  "img/floor.png",
+  "img/Farmhouse Texture.jpg",
+  "models/Bed/tex/4_poster_bed_d.jpg",
+  "models/Desk/tex/DeskWood_Dirty_Diffuse.png"
+];
 var currentlyPressedKeys = {};
-var eye = [0, 0, 1];
-var center = [0, 0, 0];
+var eye = [0, 1, 1];
+var center = [0, 1, 0];
 var up = [0, 1, 0];
 var meshes;
 var meshList = {
-  house: 'models/house_tri.obj'
+  house: 'models/house_tri.obj',
+  bed: 'models/Bed/Bed.obj',
+  desk: 'models/Desk/Desk.obj'
 }
 var zoom = 1.0;
 var position = [0, 0, 0];
@@ -295,7 +303,7 @@ function initTextures() {
 function handleLoadedTexture(texture) {
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, texture.image);
   gl.generateMipmap(gl.TEXTURE_2D);
   //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
   //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
@@ -389,6 +397,8 @@ function initMeshes() {
   OBJ.downloadMeshes(meshList, function(loadedMeshes) {
     meshes = loadedMeshes;
     OBJ.initMeshBuffers(gl, meshes.house);
+    OBJ.initMeshBuffers(gl, meshes.bed);
+    OBJ.initMeshBuffers(gl, meshes.desk);
   });
 }
 
@@ -409,7 +419,7 @@ function drawScene() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   // always use lighting, for now
   // maybe use a key to toggle in the future
-  var lighting = true;
+  var lighting = false;
   gl.uniform1i(shaderProgram.useLightingUniform, lighting);
   if (lighting) {
     // use white light as default
@@ -523,6 +533,77 @@ function drawScene() {
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, house.indexBuffer);
     setMatrixUniforms();
     gl.drawElements(gl.TRIANGLES, house.indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+    
+    mvPopMatrix();
+  }
+
+  /*
+   * Bed
+   */
+
+  if (meshes.bed) {
+    var bed = meshes.bed;
+    
+    mvPushMatrix();
+    mat4.translate(mvMatrix, mvMatrix, [1.0, -0.5, 1.0]); 
+
+    mat4.scale(mvMatrix, mvMatrix, [0.008, 0.008, 0.008]);
+    // position
+    gl.bindBuffer(gl.ARRAY_BUFFER, bed.vertexBuffer);
+    gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, bed.vertexBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+    // texture
+    gl.bindBuffer(gl.ARRAY_BUFFER, bed.textureBuffer);
+    gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, bed.textureBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, textures[3]);
+    gl.uniform1i(shaderProgram.samplerUniform, 0);
+
+    // normal
+    gl.bindBuffer(gl.ARRAY_BUFFER, bed.normalBuffer);
+    gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, bed.normalBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+    // index
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bed.indexBuffer);
+    setMatrixUniforms();
+    gl.drawElements(gl.TRIANGLES, bed.indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+    
+    mvPopMatrix();
+  }
+
+  /*
+   * Desk
+   */
+
+  if (meshes.desk) {
+    var desk = meshes.desk;
+    
+    mvPushMatrix();
+    mat4.translate(mvMatrix, mvMatrix, [1.0, -0.5, -6.0]); 
+    mat4.rotateY(mvMatrix, mvMatrix, degToRad(180));
+
+    mat4.scale(mvMatrix, mvMatrix, [0.008, 0.008, 0.008]);
+    // position
+    gl.bindBuffer(gl.ARRAY_BUFFER, desk.vertexBuffer);
+    gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, desk.vertexBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+    // texture
+    gl.bindBuffer(gl.ARRAY_BUFFER, desk.textureBuffer);
+    gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, desk.textureBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, textures[4]);
+    gl.uniform1i(shaderProgram.samplerUniform, 0);
+
+    // normal
+    gl.bindBuffer(gl.ARRAY_BUFFER, desk.normalBuffer);
+    gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, desk.normalBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+    // index
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, desk.indexBuffer);
+    setMatrixUniforms();
+    gl.drawElements(gl.TRIANGLES, desk.indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
     
     mvPopMatrix();
   }
