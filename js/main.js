@@ -6,11 +6,15 @@ var rCube = 0;
 var shaderProgram;
 var dogeTexture;
 var textures = [];
-var textureSource = ["img/doge.png", "img/floor.png"];
+var textureSource = ["img/doge.png", "img/floor.png", "img/Farmhouse Texture.jpg"];
 var currentlyPressedKeys = {};
 var eye = [0, 0, 0];
 var center = [0, 0, 0];
 var up = [0, 1, 0];
+var meshes;
+var meshList = {
+  house: 'models/house_tri.obj'
+}
 
 // utils
 function mvPushMatrix() {
@@ -205,6 +209,7 @@ function webGLStart() {
   canvas.height = window.innerHeight;
   initGL(canvas);
   initShaders();
+  initMeshes();
   initBuffers();
   initTextures();
 
@@ -264,8 +269,8 @@ function handleLoadedTexture(texture) {
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
   gl.generateMipmap(gl.TEXTURE_2D);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+  //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+  //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
   gl.bindTexture(gl.TEXTURE_2D, null);
@@ -352,6 +357,13 @@ function getShader(gl, id) {
   return shader;
 }
 
+function initMeshes() {
+  OBJ.downloadMeshes(meshList, function(loadedMeshes) {
+    meshes = loadedMeshes;
+    OBJ.initMeshBuffers(gl, meshes.house);
+  });
+}
+
 function initBuffers() {
 }
 
@@ -369,7 +381,7 @@ function drawScene() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   // always use lighting, for now
   // maybe use a key to toggle in the future
-  var lighting = true;
+  var lighting = false;
   gl.uniform1i(shaderProgram.useLightingUniform, lighting);
   if (lighting) {
     // use white light as default
@@ -385,7 +397,7 @@ function drawScene() {
   }
 
   // set the look view
-  mat4.perspective(pMatrix, 45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0);
+  mat4.perspective(pMatrix, 45, gl.viewportWidth / gl.viewportHeight, 0.1, 1000.0);
   mat4.lookAt(mvMatrix, eye, center, up);
 
   /*
@@ -444,6 +456,40 @@ function drawScene() {
   gl.drawElements(gl.TRIANGLES, cube.vertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 
   mvPopMatrix();
+
+  /*
+   * House
+   */
+
+  if (meshes.house) {
+    var house = meshes.house;
+    
+    mvPushMatrix();
+    mat4.translate(mvMatrix, mvMatrix, [0.0, -0.8, -5.0]); 
+
+    // position
+    gl.bindBuffer(gl.ARRAY_BUFFER, house.vertexBuffer);
+    gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, house.vertexBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+    // texture
+    gl.bindBuffer(gl.ARRAY_BUFFER, house.textureBuffer);
+    gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, house.textureBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, textures[2]);
+    gl.uniform1i(shaderProgram.samplerUniform, 0);
+
+    // normal
+    gl.bindBuffer(gl.ARRAY_BUFFER, house.normalBuffer);
+    gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, house.normalBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+    // index
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, house.indexBuffer);
+    setMatrixUniforms();
+    gl.drawElements(gl.TRIANGLES, house.indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+    
+    mvPopMatrix();
+  }
 }
 
 window.onresize = function() {
