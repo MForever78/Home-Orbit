@@ -358,6 +358,8 @@ function initShaders() {
   shaderProgram.ambientColorUniform = gl.getUniformLocation(shaderProgram, "uAmbientColor");
   shaderProgram.lightingDirectionUniform = gl.getUniformLocation(shaderProgram, "uLightingDirection");
   shaderProgram.directionalColorUniform = gl.getUniformLocation(shaderProgram, "uDirectionalColor");
+  shaderProgram.pointLightingLocationUniform = gl.getUniformLocation(shaderProgram, "uPointLightingLocation");
+  shaderProgram.pointLightingColorUniform = gl.getUniformLocation(shaderProgram, "uPointLightingColor");
 }
 
 function getShader(gl, id) {
@@ -419,7 +421,7 @@ function drawScene() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   // always use lighting, for now
   // maybe use a key to toggle in the future
-  var lighting = false;
+  var lighting = true;
   gl.uniform1i(shaderProgram.useLightingUniform, lighting);
   if (lighting) {
     // use white light as default
@@ -432,6 +434,10 @@ function drawScene() {
     vec3.scale(adjustedLD, adjustedLD, -1);
     gl.uniform3fv(shaderProgram.lightingDirectionUniform, adjustedLD);
     gl.uniform3f(shaderProgram.directionalColorUniform, 1.0, 1.0, 1.0);
+
+    // point light
+    gl.uniform3f(shaderProgram.pointLightingLocationUniform, 0.0, 1.0, -20.0);
+    gl.uniform3f(shaderProgram.pointLightingColorUniform, 1.0, 1.0, 0.6);
   }
 
   // set the look view
@@ -441,7 +447,7 @@ function drawScene() {
   mvPushMatrix();
   mat4.translate(mvMatrix, mvMatrix, position);
   if (bOrbit) {
-    fRotate += 0.1;
+    fRotate += 0.5;
   }
   mat4.rotateY(mvMatrix, mvMatrix, degToRad(fRotate));
 
